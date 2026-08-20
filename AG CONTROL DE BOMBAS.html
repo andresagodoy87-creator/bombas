@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AG Servicios Eléctricos - Monitoreo Bombas</title>
+
+  <!-- Firebase JS SDK (Compatibilidad v8) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      /* Fondo gris suave con la marca de agua centrada */
+      background: linear-gradient(rgba(240, 242, 245, 0.88), rgba(240, 242, 245, 0.88)), 
+                  url('COOP.jpeg') no-repeat center center fixed;
+      background-size: 450px auto;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .header img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+      background-color: white;
+    }
+
+    .header-text {
+      text-align: left;
+    }
+
+    .header-text h1 {
+      color: #1a365d;
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .header-text p {
+      color: #4a5568;
+      margin: 3px 0 0 0;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* Banner del Estado del Maestro */
+    #estado-central {
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      color: white;
+      background-color: #7f8c8d;
+      border-radius: 8px;
+      margin: 0 auto 20px auto;
+      max-width: 600px;
+      transition: background-color 0.4s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Grilla de Bombas */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(2px);
+    }
+
+    .card h3 {
+      margin: 0 0 10px 0;
+      color: #2d3748;
+      font-size: 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .badge.apagada { background-color: #e74c3c; }
+    .badge.encendida { background-color: #2ecc71; }
+
+    .btn-bomba {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-bomba.prender { background-color: #2ecc71; }
+    .btn-bomba.apagar { background-color: #e74c3c; }
+
+    .signal {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado con detección inteligente de extensión de imagen -->
+  <div class="header">
+    <img id="logo-coop" src="COOP.jpeg" alt="Logo Cooperativa" onerror="probarOtraExtension(this)">
+    <div class="header-text">
+      <h1>AG Servicios Eléctricos</h1>
+      <p>Sistema de Monitoreo Bombas</p>
+    </div>
+  </div>
+
+  <!-- Banner Estado de Conexión -->
+  <div id="estado-central">
+    <span id="estado-texto">VERIFICANDO CONEXIÓN CON CENTRAL...</span>
+  </div>
+
+  <!-- Grilla de las 15 Bombas -->
+  <div class="grid-container" id="contenedor-bombas"></div>
+
+  <script>
+    // Función de respaldo para cargar el logo si la extensión es .jpg o .png
+    function probarOtraExtension(img) {
+      if (img.src.endsWith('COOP.jpeg')) {
+        img.src = 'COOP.jpg';
+      } else if (img.src.endsWith('COOP.jpg')) {
+        img.src = 'COOP.png';
+      } else {
+        img.style.display = 'none'; // Si no la encuentra, oculta el cuadro roto
+      }
+    }
+
+    // 1. Configuración Firebase
+    const firebaseConfig = {
+      databaseURL: "https://control-de-bombas-default-rtdb.firebaseio.com/"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // 2. Generar dinámicamente la grilla de las 15 tarjetas
+    const contenedor = document.getElementById('contenedor-bombas');
+    for (let i = 1; i <= 15; i++) {
+      contenedor.innerHTML += `
+        <div class="card" id="card-${i}">
+          <h3>Bomba ${i}</h3>
+          <div class="badge apagada" id="badge-${i}">APAGADA</div>
+          <button class="btn-bomba prender" id="btn-${i}" onclick="toggleBomba(${i})">PRENDER</button>
+          <div class="signal">Señal: <span id="rssi-${i}">--</span> dBm</div>
+        </div>
+      `;
+    }
+
+    const estadoCentralEl = document.getElementById('estado-central');
+    const estadoTextoEl = document.getElementById('estado-texto');
+    let temporizadorDesconexion = null;
+
+    // 3. Control de presencia del Maestro (Online/Offline)
+    db.ref('sistema').on('value', (snapshot) => {
+      const sistemaData = snapshot.val();
+
+      if (sistemaData && sistemaData.maestroOnline === true) {
+        if (estadoCentralEl) estadoCentralEl.style.backgroundColor = "#2ecc71";
+        if (estadoTextoEl) estadoTextoEl.innerText = "🟢 CENTRAL ONLINE";
+        
+        document.querySelectorAll('.btn-bomba').forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          btn.style.cursor = "pointer";
+        });
+
+        clearTimeout(temporizadorDesconexion);
+        temporizadorDesconexion = setTimeout(() => {
+          marcarOffline("Central Offline (Sin Luz / Internet)");
+        }, 25000);
+
+      } else {
+        marcarOffline("Central Offline");
+      }
+    });
+
+    function marcarOffline(mensaje) {
+      if (estadoCentralEl) estadoCentralEl.style.backgroundColor = "#e74c3c";
+      if (estadoTextoEl) estadoTextoEl.innerText = `🔴 ${mensaje.toUpperCase()}`;
+      
+      document.querySelectorAll('.btn-bomba').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = "0.4";
+        btn.style.cursor = "not-allowed";
+      });
+    }
+
+    // 4. Escuchar el estado de cada bomba en tiempo real desde Firebase
+    for (let i = 1; i <= 15; i++) {
+      db.ref(`bombas/bomba_${i}`).on('value', (snapshot) => {
+        const datos = snapshot.val();
+        if (datos) {
+          const badge = document.getElementById(`badge-${i}`);
+          const btn = document.getElementById(`btn-${i}`);
+          const rssi = document.getElementById(`rssi-${i}`);
+
+          if (datos.estado === "ENCENDIDA") {
+            badge.innerText = "ENCENDIDA";
+            badge.className = "badge encendida";
+            btn.innerText = "APAGAR";
+            btn.className = "btn-bomba apagar";
+          } else {
+            badge.innerText = "APAGADA";
+            badge.className = "badge apagada";
+            btn.innerText = "PRENDER";
+            btn.className = "btn-bomba prender";
+          }
+
+          if (datos.rssi !== undefined) {
+            rssi.innerText = datos.rssi;
+          }
+        }
+      });
+    }
+
+    // 5. Enviar orden de PRENDER/APAGAR
+    function toggleBomba(id) {
+      const btn = document.getElementById(`btn-${id}`);
+      const nuevoComando = (btn.innerText === "PRENDER") ? "PRENDER" : "APAGAR";
+
+      db.ref(`bombas/bomba_${id}`).update({
+        comando: nuevoComando
+      });
+    }
+  </script>
+
+</body>
+</html>
