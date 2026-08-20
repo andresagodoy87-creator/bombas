@@ -64,16 +64,15 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    /* CUADRÍCULA OPTIMIZADA: Fuerza 2 columnas en celulares y más en computadoras */
+    /* Cuadrícula para Celulares */
     .grid-container {
       display: grid;
-      grid-template-columns: repeat(2, 1fr); /* 2 columnas fijas en pantallas chicas */
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
       max-width: 1400px;
       margin: 0 auto;
     }
 
-    /* En pantallas medianas y grandes se acomodan 4 o 6 columnas */
     @media (min-width: 600px) {
       .grid-container {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -128,6 +127,68 @@
       color: #718096;
       margin-top: 6px;
     }
+
+    /* --- ESTILOS DEL MODAL DE CONTRASEÑA --- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-box h3 {
+      margin-top: 0;
+      color: #1a365d;
+      font-size: 16px;
+    }
+
+    .modal-box p {
+      font-size: 13px;
+      color: #4a5568;
+      margin-bottom: 15px;
+    }
+
+    .modal-box input {
+      width: 90%;
+      padding: 10px;
+      font-size: 16px;
+      text-align: center;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      outline: none;
+    }
+
+    .modal-btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-confirmar { background-color: #2ecc71; color: white; }
+    .btn-cancelar { background-color: #a0aec0; color: white; }
   </style>
 </head>
 <body>
@@ -146,7 +207,26 @@
 
   <div class="grid-container" id="contenedor-bombas"></div>
 
+  <!-- MODAL DE CONTRASEÑA -->
+  <div class="modal-overlay" id="modal-clave">
+    <div class="modal-box">
+      <h3 id="modal-titulo">Confirmar Acción</h3>
+      <p id="modal-subtitulo">Ingrese la contraseña para operar la bomba</p>
+      <input type="password" id="input-clave" placeholder="••••" maxlength="10">
+      <div class="modal-btn-group">
+        <button class="modal-btn btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+        <button class="modal-btn btn-confirmar" onclick="validarYEnviar()">Enviar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // --- DEFINICIÓN DE CONTRASEÑA ---
+    const CLAVE_CORRECTA = "1234"; // <--- CAMBIÁ ACÁ TU CONTRASEÑA DE SEGURIDAD
+
+    let bombaSeleccionada = null;
+    let comandoSeleccionado = "";
+
     function probarOtraExtension(img) {
       if (img.src.endsWith('COOP.jpeg')) {
         img.src = 'COOP.jpg';
@@ -172,7 +252,7 @@
         <div class="card" id="card-${i}">
           <h3>Bomba ${i}</h3>
           <div class="badge apagada" id="badge-${i}">APAGADA</div>
-          <button class="btn-bomba prender" id="btn-${i}" onclick="toggleBomba(${i})">PRENDER</button>
+          <button class="btn-bomba prender" id="btn-${i}" onclick="solicitarClave(${i})">PRENDER</button>
           <div class="signal">Señal: <span id="rssi-${i}">--</span> dBm</div>
         </div>
       `;
@@ -243,13 +323,36 @@
       });
     }
 
-    function toggleBomba(id) {
+    // --- LÓGICA DE CONTROL DE ACCESO CON CONTRASEÑA ---
+    function solicitarClave(id) {
       const btn = document.getElementById(`btn-${id}`);
-      const nuevoComando = (btn.innerText === "PRENDER") ? "PRENDER" : "APAGAR";
+      bombaSeleccionada = id;
+      comandoSeleccionado = (btn.innerText === "PRENDER") ? "PRENDER" : "APAGAR";
 
-      db.ref(`bombas/bomba_${id}`).update({
-        comando: nuevoComando
-      });
+      document.getElementById('modal-titulo').innerText = `${comandoSeleccionado} BOMBA ${id}`;
+      document.getElementById('input-clave').value = "";
+      document.getElementById('modal-clave').style.display = "flex";
+      document.getElementById('input-clave').focus();
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-clave').style.display = "none";
+      bombaSeleccionada = null;
+      comandoSeleccionado = "";
+    }
+
+    function validarYEnviar() {
+      const claveIngresada = document.getElementById('input-clave').value;
+
+      if (claveIngresada === CLAVE_CORRECTA) {
+        db.ref(`bombas/bomba_${bombaSeleccionada}`).update({
+          comando: comandoSeleccionado
+        });
+        cerrarModal();
+      } else {
+        alert("❌ Contraseña incorrecta");
+        document.getElementById('input-clave').value = "";
+      }
     }
   </script>
 
