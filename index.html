@@ -3,358 +3,274 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AG Servicios Eléctricos - Monitoreo Bombas</title>
+  <title>AG Servicios Eléctricos - Control de Bombas</title>
 
-  <!-- Firebase JS SDK (Compatibilidad v8) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+  <!-- Estilos Visuales de la Interfaz Web -->
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(rgba(240, 242, 245, 0.88), rgba(240, 242, 245, 0.88)), 
-                  url('COOP.jpeg') no-repeat center center fixed;
-      background-size: 350px auto;
-      margin: 0;
-      padding: 10px;
+      background-color: #121826;
+      color: #ffffff;
+      padding: 20px;
     }
 
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .header img {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      object-fit: cover;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-      background-color: white;
-    }
-
-    .header-text h1 {
-      color: #1a365d;
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .header-text p {
-      color: #4a5568;
-      margin: 2px 0 0 0;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    /* Banner del Estado del Maestro */
-    #estado-central {
-      padding: 8px;
+    header {
       text-align: center;
-      font-weight: bold;
-      font-size: 13px;
-      color: white;
-      background-color: #7f8c8d;
-      border-radius: 6px;
-      margin: 0 auto 12px auto;
-      max-width: 600px;
-      transition: background-color 0.4s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #2a3447;
     }
 
-    /* Cuadrícula para Celulares */
+    header h1 {
+      color: #00d2ff;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      color: #8f9cae;
+      font-size: 0.95rem;
+      margin-top: 5px;
+    }
+
+    /* Grid de tarjetas de bombas */
     .grid-container {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      max-width: 1400px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
-    @media (min-width: 600px) {
-      .grid-container {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 12px;
-      }
-    }
-
     .card {
-      background: rgba(255, 255, 255, 0.94);
-      border-radius: 8px;
-      padding: 10px 6px;
-      text-align: center;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+      background-color: #1a2332;
+      border-radius: 12px;
+      padding: 20px;
+      border: 2px solid #2a3447;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .card h3 {
-      margin: 0 0 6px 0;
-      color: #2d3748;
-      font-size: 14px;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: bold;
-      color: white;
-      margin-bottom: 8px;
-    }
-
-    .badge.apagada { background-color: #e74c3c; }
-    .badge.encendida { background-color: #2ecc71; }
-
-    .btn-bomba {
-      width: 100%;
-      padding: 8px 4px;
-      border: none;
-      border-radius: 5px;
-      font-weight: bold;
-      color: white;
-      cursor: pointer;
-      font-size: 13px;
-      transition: opacity 0.2s;
-    }
-
-    .btn-bomba.prender { background-color: #2ecc71; }
-    .btn-bomba.apagar { background-color: #e74c3c; }
-
-    .signal {
-      font-size: 10px;
-      color: #718096;
-      margin-top: 6px;
-    }
-
-    /* --- ESTILOS DEL MODAL DE CONTRASEÑA --- */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(3px);
-      z-index: 1000;
-      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: space-between;
       align-items: center;
     }
 
-    .modal-box {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      width: 85%;
-      max-width: 320px;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    .card .rssi {
+      font-size: 0.75rem;
+      color: #8f9cae;
+      font-weight: normal;
     }
 
-    .modal-box h3 {
-      margin-top: 0;
-      color: #1a365d;
-      font-size: 16px;
-    }
-
-    .modal-box p {
-      font-size: 13px;
-      color: #4a5568;
-      margin-bottom: 15px;
-    }
-
-    .modal-box input {
-      width: 90%;
-      padding: 10px;
-      font-size: 16px;
-      text-align: center;
-      border: 1px solid #cbd5e0;
+    /* Carteles de Estado */
+    .banner-estado {
+      padding: 12px;
       border-radius: 6px;
-      margin-bottom: 15px;
-      outline: none;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.88rem;
+      margin: 15px 0;
+      transition: background-color 0.3s ease;
     }
 
-    .modal-btn-group {
+    /* Botones de Control */
+    .btn-group {
       display: flex;
       gap: 10px;
+      margin-top: 10px;
     }
 
-    .modal-btn {
+    button {
       flex: 1;
-      padding: 10px;
+      padding: 12px;
       border: none;
       border-radius: 6px;
       font-weight: bold;
+      font-size: 0.9rem;
       cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.1s ease;
     }
 
-    .btn-confirmar { background-color: #2ecc71; color: white; }
-    .btn-cancelar { background-color: #a0aec0; color: white; }
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-prender {
+      background-color: #28a745;
+      color: #ffffff;
+    }
+
+    .btn-apagar {
+      background-color: #dc3545;
+      color: #ffffff;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    /* Clases Dinámicas según Estado en Firebase */
+    .estado-encendida {
+      border-color: #28a745 !important;
+      box-shadow: 0 0 10px rgba(40, 167, 69, 0.2);
+    }
+
+    .estado-apagada {
+      border-color: #2a3447 !important;
+    }
+
+    .estado-falla {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 12px rgba(220, 53, 69, 0.4);
+    }
+
+    .estado-offline {
+      border-color: #ffc107 !important;
+    }
+
+    /* Animación de Parpadeo para Alertas de Falla */
+    @keyframes parpadeoAlarma {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .animar-falla {
+      animation: parpadeoAlarma 1.2s infinite;
+    }
   </style>
-</head>
-<body>
 
-  <div class="header">
-    <img id="logo-coop" src="COOP.jpeg" alt="Logo Cooperativa" onerror="probarOtraExtension(this)">
-    <div class="header-text">
-      <h1>AG Servicios Eléctricos</h1>
-      <p>Sistema de Monitoreo Bombas</p>
-    </div>
-  </div>
+  <!-- Firebase SDK Web (Modular v10.8) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-  <div id="estado-central">
-    <span id="estado-texto">VERIFICANDO CONEXIÓN CON CENTRAL...</span>
-  </div>
-
-  <div class="grid-container" id="contenedor-bombas"></div>
-
-  <!-- MODAL DE CONTRASEÑA -->
-  <div class="modal-overlay" id="modal-clave">
-    <div class="modal-box">
-      <h3 id="modal-titulo">Confirmar Acción</h3>
-      <p id="modal-subtitulo">Ingrese la contraseña para operar la bomba</p>
-      <input type="password" id="input-clave" placeholder="••••" maxlength="10">
-      <div class="modal-btn-group">
-        <button class="modal-btn btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-        <button class="modal-btn btn-confirmar" onclick="validarYEnviar()">Enviar</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // --- DEFINICIÓN DE CONTRASEÑA ---
-    const CLAVE_CORRECTA = "1234"; // <--- CAMBIÁ ACÁ TU CONTRASEÑA DE SEGURIDAD
-
-    let bombaSeleccionada = null;
-    let comandoSeleccionado = "";
-
-    function probarOtraExtension(img) {
-      if (img.src.endsWith('COOP.jpeg')) {
-        img.src = 'COOP.jpg';
-      } else if (img.src.endsWith('COOP.jpg')) {
-        img.src = 'COOP.png';
-      } else {
-        img.style.display = 'none';
-      }
-    }
-
+    // Configuración exacta para tu proyecto
     const firebaseConfig = {
       databaseURL: "https://control-de-bombas-default-rtdb.firebaseio.com/"
     };
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
-    const contenedor = document.getElementById('contenedor-bombas');
+    // Renderizado dinámico de las 15 tarjetas
+    const grid = document.getElementById("grid-bombas");
     for (let i = 1; i <= 15; i++) {
-      contenedor.innerHTML += `
-        <div class="card" id="card-${i}">
-          <h3>Bomba ${i}</h3>
-          <div class="badge apagada" id="badge-${i}">APAGADA</div>
-          <button class="btn-bomba prender" id="btn-${i}" onclick="solicitarClave(${i})">PRENDER</button>
-          <div class="signal">Señal: <span id="rssi-${i}">--</span> dBm</div>
+      grid.innerHTML += `
+        <div class="card estado-apagada" id="tarjeta-${i}">
+          <h3>
+            Bomba ${i}
+            <span class="rssi" id="rssi-${i}">-- dBm</span>
+          </h3>
+          <div class="banner-estado" id="banner-${i}" style="background-color: #6c757d; color: #fff;">
+            ❄️ BOMBA DETENIDA
+          </div>
+          <div class="btn-group">
+            <button class="btn-prender" onclick="enviarComando(${i}, 'PRENDER')">PRENDER</button>
+            <button class="btn-apagar" onclick="enviarComando(${i}, 'APAGAR')">APAGAR</button>
+          </div>
         </div>
       `;
     }
 
-    const estadoCentralEl = document.getElementById('estado-central');
-    const estadoTextoEl = document.getElementById('estado-texto');
-    let temporizadorDesconexion = null;
+    // Escritura de órdenes al tocar los botones
+    window.enviarComando = function(idBomba, orden) {
+      const updates = {};
+      updates[`/bombas/bomba_${idBomba}/comando`] = orden;
+      update(ref(database), updates)
+        .then(() => console.log(`Orden ${orden} enviada a Bomba ${idBomba}`))
+        .catch((err) => alert("Error enviando comando: " + err.message));
+    };
 
-    db.ref('sistema').on('value', (snapshot) => {
-      const sistemaData = snapshot.val();
+    // Escucha en tiempo real de Firebase
+    const bombasRef = ref(database, 'bombas');
+    onValue(bombasRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
 
-      if (sistemaData && sistemaData.maestroOnline === true) {
-        if (estadoCentralEl) estadoCentralEl.style.backgroundColor = "#2ecc71";
-        if (estadoTextoEl) estadoTextoEl.innerText = "🟢 CENTRAL ONLINE";
-        
-        document.querySelectorAll('.btn-bomba').forEach(btn => {
-          btn.disabled = false;
-          btn.style.opacity = "1";
-          btn.style.cursor = "pointer";
-        });
-
-        clearTimeout(temporizadorDesconexion);
-        temporizadorDesconexion = setTimeout(() => {
-          marcarOffline("Central Offline (Sin Luz / Internet)");
-        }, 25000);
-
-      } else {
-        marcarOffline("Central Offline");
+      for (let i = 1; i <= 15; i++) {
+        const bomba = data[`bomba_${i}`];
+        if (bomba) {
+          actualizarInterfazTarjeta(i, bomba.estado, bomba.rssi);
+        }
       }
     });
 
-    function marcarOffline(mensaje) {
-      if (estadoCentralEl) estadoCentralEl.style.backgroundColor = "#e74c3c";
-      if (estadoTextoEl) estadoTextoEl.innerText = `🔴 ${mensaje.toUpperCase()}`;
-      
-      document.querySelectorAll('.btn-bomba').forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = "0.4";
-        btn.style.cursor = "not-allowed";
-      });
-    }
+    // Actualización de carteles y estilos de alarma
+    function actualizarInterfazTarjeta(id, estado, rssi) {
+      const tarjeta = document.getElementById(`tarjeta-${id}`);
+      const banner = document.getElementById(`banner-${id}`);
+      const rssiLabel = document.getElementById(`rssi-${id}`);
 
-    for (let i = 1; i <= 15; i++) {
-      db.ref(`bombas/bomba_${i}`).on('value', (snapshot) => {
-        const datos = snapshot.val();
-        if (datos) {
-          const badge = document.getElementById(`badge-${i}`);
-          const btn = document.getElementById(`btn-${i}`);
-          const rssi = document.getElementById(`rssi-${i}`);
+      if (rssi) rssiLabel.innerText = `${rssi} dBm`;
 
-          if (datos.estado === "ENCENDIDA") {
-            badge.innerText = "ENCENDIDA";
-            badge.className = "badge encendida";
-            btn.innerText = "APAGAR";
-            btn.className = "btn-bomba apagar";
-          } else {
-            badge.innerText = "APAGADA";
-            badge.className = "badge apagada";
-            btn.innerText = "PRENDER";
-            btn.className = "btn-bomba prender";
-          }
+      tarjeta.classList.remove("estado-encendida", "estado-apagada", "estado-falla", "estado-offline");
+      banner.classList.remove("animar-falla");
 
-          if (datos.rssi !== undefined) {
-            rssi.innerText = datos.rssi;
-          }
-        }
-      });
-    }
+      switch (estado) {
+        case "ENCENDIDA":
+          tarjeta.classList.add("estado-encendida");
+          banner.innerHTML = "⚡ <b>BOMBA EN MARCHA</b>";
+          banner.style.backgroundColor = "#28a745";
+          banner.style.color = "#ffffff";
+          break;
 
-    // --- LÓGICA DE CONTROL DE ACCESO CON CONTRASEÑA ---
-    function solicitarClave(id) {
-      const btn = document.getElementById(`btn-${id}`);
-      bombaSeleccionada = id;
-      comandoSeleccionado = (btn.innerText === "PRENDER") ? "PRENDER" : "APAGAR";
+        case "FALLA_GUARDAMOTOR":
+          tarjeta.classList.add("estado-falla");
+          banner.classList.add("animar-falla");
+          banner.innerHTML = "🚨 <b>FALLA: SALTÓ GUARDAMOTOR</b>";
+          banner.style.backgroundColor = "#dc3545";
+          banner.style.color = "#ffffff";
+          break;
 
-      document.getElementById('modal-titulo').innerText = `${comandoSeleccionado} BOMBA ${id}`;
-      document.getElementById('input-clave').value = "";
-      document.getElementById('modal-clave').style.display = "flex";
-      document.getElementById('input-clave').focus();
-    }
+        case "FALLA_CONTACTOR_TRABADO":
+          tarjeta.classList.add("estado-falla");
+          banner.classList.add("animar-falla");
+          banner.innerHTML = "🚨 <b>FALLA: CONTACTOR TRABADO</b>";
+          banner.style.backgroundColor = "#dc3545";
+          banner.style.color = "#ffffff";
+          break;
 
-    function cerrarModal() {
-      document.getElementById('modal-clave').style.display = "none";
-      bombaSeleccionada = null;
-      comandoSeleccionado = "";
-    }
+        case "SIN_COMUNICACION":
+          tarjeta.classList.add("estado-offline");
+          banner.innerHTML = "⚠️ <b>POZO SIN COMUNICACIÓN</b>";
+          banner.style.backgroundColor = "#ffc107";
+          banner.style.color = "#000000";
+          break;
 
-    function validarYEnviar() {
-      const claveIngresada = document.getElementById('input-clave').value;
-
-      if (claveIngresada === CLAVE_CORRECTA) {
-        db.ref(`bombas/bomba_${bombaSeleccionada}`).update({
-          comando: comandoSeleccionado
-        });
-        cerrarModal();
-      } else {
-        alert("❌ Contraseña incorrecta");
-        document.getElementById('input-clave').value = "";
+        case "APAGADA":
+        default:
+          tarjeta.classList.add("estado-apagada");
+          banner.innerHTML = "❄️ <b>BOMBA DETENIDA</b>";
+          banner.style.backgroundColor = "#6c757d";
+          banner.style.color = "#ffffff";
+          break;
       }
     }
   </script>
+</head>
+<body>
+
+  <header>
+    <h1>AG SERVICIOS ELÉCTRICOS</h1>
+    <p>Sistema de Automatización y Monitoreo de Pozos vía LoRa</p>
+  </header>
+
+  <main class="grid-container" id="grid-bombas">
+    <!-- Las tarjetas se generan dinámicamente -->
+  </main>
 
 </body>
 </html>
