@@ -140,31 +140,30 @@
       }
     });
 
-    // 2. ESCUCHAR ESTADO DEL MAESTRO EN TIEMPO REAL CON CONTROL DE TIEMPO
+    // 2. ESCUCHAR ESTADO DEL MAESTRO CON VALIDACIÓN RIGUROSA DE TIEMPO
     const sistemaRef = ref(database, 'sistema');
-    let intervaloVerificacion = null;
+    let temporizadorVerificacion = null;
 
     onValue(sistemaRef, (snapshot) => {
       const datos = snapshot.val();
-      
-      // Limpiar verificador anterior si existe
-      if (intervaloVerificacion) clearInterval(intervaloVerificacion);
+      const dot = document.getElementById("dot-maestro");
+      const texto = document.getElementById("texto-maestro");
 
-      const verificarEstado = () => {
-        const dot = document.getElementById("dot-maestro");
-        const texto = document.getElementById("texto-maestro");
+      if (temporizadorVerificacion) clearInterval(temporizadorVerificacion);
 
-        if (!datos || !datos.maestroOnline || !datos.ultimaConexion) {
+      const evaluarConexion = () => {
+        if (!datos || datos.maestroOnline !== true || !datos.ultimaConexion) {
           dot.className = "status-dot dot-offline";
           texto.innerText = "Maestro Offline";
           return;
         }
 
-        const ahora = Date.now();
-        const ultimaConexion = datos.ultimaConexion;
-        const segundosTranscurridos = (ahora - ultimaConexion) / 1000;
+        const tiempoActual = Date.now();
+        const ultimaLectura = Number(datos.ultimaConexion);
+        const diferenciaSegundos = Math.floor((tiempoActual - ultimaLectura) / 1000);
 
-        if (segundosTranscurridos < 25) {
+        // Si pasaron menos de 25 segundos desde el último pulso, está Online
+        if (diferenciaSegundos >= 0 && diferenciaSegundos < 25) {
           dot.className = "status-dot dot-online";
           texto.innerText = "Maestro Online";
         } else {
@@ -173,9 +172,8 @@
         }
       };
 
-      // Evaluar inmediatamente y reevaluar cada 5 segundos
-      verificarEstado();
-      intervaloVerificacion = setInterval(verificarEstado, 5000);
+      evaluarConexion();
+      temporizadorVerificacion = setInterval(evaluarConexion, 3000);
     });
 
     function actualizarInterfazTarjeta(id, estado, rssi) {
@@ -238,8 +236,8 @@
     
     <!-- INDICADOR DE CONEXIÓN DEL MAESTRO -->
     <div class="status-maestro">
-      <span class="status-dot" id="dot-maestro"></span>
-      <span id="texto-maestro">Verificando Maestro...</span>
+      <span class="status-dot dot-offline" id="dot-maestro"></span>
+      <span id="texto-maestro">Maestro Offline</span>
     </div>
   </header>
 
