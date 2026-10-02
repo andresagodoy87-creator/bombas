@@ -29,7 +29,6 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background-color: #6c757d;
       display: inline-block;
     }
     .dot-online { background-color: #28a745; box-shadow: 0 0 8px #28a745; }
@@ -140,7 +139,7 @@
       }
     });
 
-    // 2. ESCUCHAR ESTADO DEL MAESTRO CON VALIDACIÓN RIGUROSA DE TIEMPO
+    // 2. ESCUCHAR ESTADO DEL MAESTRO
     const sistemaRef = ref(database, 'sistema');
     let temporizadorVerificacion = null;
 
@@ -152,6 +151,7 @@
       if (temporizadorVerificacion) clearInterval(temporizadorVerificacion);
 
       const evaluarConexion = () => {
+        // Si no hay datos, o maestroOnline no es true, o no hay timestamp
         if (!datos || datos.maestroOnline !== true || !datos.ultimaConexion) {
           dot.className = "status-dot dot-offline";
           texto.innerText = "Maestro Offline";
@@ -160,9 +160,9 @@
 
         const tiempoActual = Date.now();
         const ultimaLectura = Number(datos.ultimaConexion);
-        const diferenciaSegundos = Math.floor((tiempoActual - ultimaLectura) / 1000);
+        const diferenciaSegundos = (tiempoActual - ultimaLectura) / 1000;
 
-        // Si pasaron menos de 25 segundos desde el último pulso, está Online
+        // Requiere un latido recibido hace menos de 25 segundos
         if (diferenciaSegundos >= 0 && diferenciaSegundos < 25) {
           dot.className = "status-dot dot-online";
           texto.innerText = "Maestro Online";
