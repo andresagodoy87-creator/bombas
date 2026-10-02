@@ -51,7 +51,7 @@
       header h1 { font-size: 1.4rem; }
       header p { font-size: 0.85rem; }
       .grid-container {
-        grid-template-columns: repeat(2, 1fr); /* Fuerza 2 columnas en pantallas chicas */
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
       }
       .card { padding: 12px !important; }
@@ -140,21 +140,42 @@
       }
     });
 
-    // 2. ESCUCHAR ESTADO DEL MAESTRO EN TIEMPO REAL
+    // 2. ESCUCHAR ESTADO DEL MAESTRO EN TIEMPO REAL CON CONTROL DE TIEMPO
     const sistemaRef = ref(database, 'sistema');
+    let intervaloVerificacion = null;
+
     onValue(sistemaRef, (snapshot) => {
       const datos = snapshot.val();
-      const dot = document.getElementById("dot-maestro");
-      const texto = document.getElementById("texto-maestro");
+      
+      // Limpiar verificador anterior si existe
+      if (intervaloVerificacion) clearInterval(intervaloVerificacion);
 
-      if (!datos || !datos.maestroOnline) {
-        dot.className = "status-dot dot-offline";
-        texto.innerText = "Maestro Offline";
-        return;
-      }
+      const verificarEstado = () => {
+        const dot = document.getElementById("dot-maestro");
+        const texto = document.getElementById("texto-maestro");
 
-      dot.className = "status-dot dot-online";
-      texto.innerText = "Maestro Online";
+        if (!datos || !datos.maestroOnline || !datos.ultimaConexion) {
+          dot.className = "status-dot dot-offline";
+          texto.innerText = "Maestro Offline";
+          return;
+        }
+
+        const ahora = Date.now();
+        const ultimaConexion = datos.ultimaConexion;
+        const segundosTranscurridos = (ahora - ultimaConexion) / 1000;
+
+        if (segundosTranscurridos < 25) {
+          dot.className = "status-dot dot-online";
+          texto.innerText = "Maestro Online";
+        } else {
+          dot.className = "status-dot dot-offline";
+          texto.innerText = "Maestro Offline";
+        }
+      };
+
+      // Evaluar inmediatamente y reevaluar cada 5 segundos
+      verificarEstado();
+      intervaloVerificacion = setInterval(verificarEstado, 5000);
     });
 
     function actualizarInterfazTarjeta(id, estado, rssi) {
