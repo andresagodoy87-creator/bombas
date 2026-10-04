@@ -139,7 +139,7 @@
       }
     });
 
-    // 2. ESCUCHAR ESTADO DEL MAESTRO
+    // 2. ESCUCHAR ESTADO DEL MAESTRO CON MARGEN PARA RELOJ DE CELULAR
     const sistemaRef = ref(database, 'sistema');
     let temporizadorVerificacion = null;
     let datosSistema = null;
@@ -158,8 +158,8 @@
       const ultimaLectura = Number(datosSistema.ultimaConexion);
       const diferenciaSegundos = Math.abs(tiempoActual - ultimaLectura) / 1000;
 
-      // Tolerancia de 35 segundos para absorción de latencia
-      if (diferenciaSegundos < 35) {
+      // Tolerancia de 120 segundos para absorber desfasajes de hora en el celular
+      if (diferenciaSegundos < 120) {
         dot.className = "status-dot dot-online";
         texto.innerText = "Maestro Online";
       } else {
