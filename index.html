@@ -6,7 +6,7 @@
   <title>Control de Bombas - AG Servicios Eléctricos</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: #121824; color: #ffffff; padding: 16px; }
+    body { background-color: #121824; color: #ffffff; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; }
 
     header {
       display: flex;
@@ -19,8 +19,10 @@
     }
     .header-logo {
       height: 55px;
-      width: auto;
+      width: 55px;
       border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
     }
     header h1 { 
       font-size: 1.8rem; 
@@ -57,6 +59,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 12px;
+      flex: 1;
     }
 
     /* Tarjetas */
@@ -150,13 +153,46 @@
       cursor: not-allowed;
       opacity: 0.5;
     }
+
+    /* Pie de página */
+    footer {
+      text-align: center;
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid #232d3f;
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <!-- Muestra la imagen del Logo de la Cooperativa -->
-    <img src="logo.png" alt="Logo Cooperativa" class="header-logo" onerror="this.style.display='none'">
+    <!-- Logo incrustado en el código -->
+    <svg class="header-logo" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="98" fill="#1d308f" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="100" cy="100" r="82" fill="#eab308"/>
+      <circle cx="100" cy="100" r="82" fill="none" stroke="#1d308f" stroke-width="6"/>
+      <!-- Gota de agua -->
+      <path d="M 100 30 C 100 30 65 70 65 92 A 35 35 0 0 0 135 92 C 135 70 100 30 100 30 Z" fill="#0284c7" stroke="#ffffff" stroke-width="2"/>
+      <path d="M 90 50 C 90 50 75 75 75 90 C 75 100 82 105 82 105 C 82 105 72 95 75 82 C 78 70 90 50 90 50 Z" fill="#ffffff" opacity="0.6"/>
+      <!-- Pinos -->
+      <polygon points="100,85 70,140 100,140" fill="#15803d"/>
+      <polygon points="100,85 130,140 100,140" fill="#16a34a"/>
+      <rect x="92" y="140" width="16" height="20" fill="#15803d"/>
+      <polygon points="65,95 35,150 65,150" fill="#15803d"/>
+      <polygon points="65,95 95,150 65,150" fill="#16a34a"/>
+      <rect x="57" y="150" width="16" height="15" fill="#15803d"/>
+      <!-- Texto circular simplificado -->
+      <path id="textPath" d="M 25 100 A 75 75 0 1 1 175 100" fill="none"/>
+      <text fill="#ffffff" font-size="11" font-weight="bold" letter-spacing="1">
+        <textPath href="#textPath" startOffset="50%" text-anchor="middle">COOPERATIVA DE SERVICIOS PÚBLICOS</textPath>
+      </text>
+    </svg>
+
     <h1>CONTROL DE BOMBAS</h1>
   </header>
 
@@ -166,6 +202,10 @@
   </div>
 
   <div class="grid-bombas" id="contenedorBombas"></div>
+
+  <footer>
+    AG SERVICIOS ELÉCTRICOS Y AUTOMATIZACIÓN
+  </footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -185,7 +225,100 @@
     let estaOnline = false;
     let datosBombas = {};
 
+    render();
+
     onValue(ref(db), (snapshot) => {
       ultimoCambio = Date.now();
       if (snapshot.exists()) {
         const root = snapshot.val();
+        datosBombas = root.bombas || {};
+      }
+      revisarConexion();
+      render();
+    });
+
+    setInterval(() => {
+      revisarConexion();
+    }, 1000);
+
+    function revisarConexion() {
+      const tiempoSinDatos = Date.now() - ultimoCambio;
+      const estadoPrevio = estaOnline;
+
+      estaOnline = (tiempoSinDatos < 25000);
+
+      if (estaOnline) {
+        maestroStatus.textContent = "EN LÍNEA";
+        maestroStatus.className = "status-badge online";
+      } else {
+        maestroStatus.textContent = "DESCONECTADO";
+        maestroStatus.className = "status-badge offline";
+      }
+
+      if (estadoPrevio !== estaOnline) {
+        render();
+      }
+    }
+
+    function render() {
+      contenedor.innerHTML = '';
+
+      for (let i = 1; i <= 15; i++) {
+        const key = `bomba_${i}`;
+        const b = datosBombas[key] || { comando: 'APAGAR', estado: 'APAGADA', rssi: 0 };
+
+        let claseBox = '';
+        let textoEstado = 'BOMBA DETENIDA';
+        const sinRespuesta = (b.estado === 'SIN_RESPUESTA');
+
+        if (b.estado === 'ENCENDIDA') {
+          claseBox = 'activa';
+          textoEstado = 'BOMBA ENCENDIDA';
+        } else if (b.estado && b.estado.includes('FALLA')) {
+          claseBox = 'falla';
+          textoEstado = b.estado.replace('_', ' ');
+        } else if (sinRespuesta) {
+          claseBox = 'sin-respuesta';
+          textoEstado = 'SIN RESPUESTA';
+        }
+
+        const bloq = !estaOnline || sinRespuesta;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="card-title">Bomba ${i}</span>
+            <span class="rssi-text">${b.rssi ? b.rssi + ' dBm' : '-50 dBm'}</span>
+          </div>
+
+          <div class="status-box ${claseBox}">
+            <svg class="bomba-icon" viewBox="0 0 100 120">
+              <path d="M 40 10 L 60 10 L 60 25 L 50 25 L 50 40 A 35 35 0 1 1 25 65 L 40 65 A 20 20 0 1 0 50 40 L 40 40 Z M 30 105 L 70 105 L 70 115 L 30 115 Z M 40 95 L 60 95 L 60 105 L 40 105 Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+              <circle cx="50" cy="65" r="12" fill="none" stroke="currentColor" stroke-width="6"/>
+              <line x1="50" y1="43" x2="50" y2="53" stroke="currentColor" stroke-width="5"/>
+              <line x1="50" y1="77" x2="50" y2="87" stroke="currentColor" stroke-width="5"/>
+              <line x1="28" y1="65" x2="38" y2="65" stroke="currentColor" stroke-width="5"/>
+              <line x1="62" y1="65" x2="72" y2="65" stroke="currentColor" stroke-width="5"/>
+            </svg>
+            <div class="status-text">${textoEstado}</div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-on" ${bloq ? 'disabled' : ''} onclick="enviar(${i}, 'PRENDER')">PRENDER</button>
+            <button class="btn btn-off" ${bloq ? 'disabled' : ''} onclick="enviar(${i}, 'APAGAR')">APAGAR</button>
+          </div>
+        `;
+        contenedor.appendChild(card);
+      }
+    }
+
+    window.enviar = function(id, comando) {
+      if (!estaOnline) return;
+      const updates = {};
+      updates[`bombas/bomba_${id}/comando`] = comando;
+      update(ref(db), updates);
+    };
+  </script>
+</body>
+</html>
