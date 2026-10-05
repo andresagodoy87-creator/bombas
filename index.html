@@ -61,7 +61,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://control-de-bombas-default-rtdb.firebaseio.com/"
@@ -98,8 +98,11 @@
 
     function enviarComando(idBomba, orden) {
       console.log(`Enviando ${orden} a Bomba ${idBomba}...`);
-      set(ref(database, `bombas/bomba_${idBomba}/comando`), orden)
-        .then(() => console.log(`✅ Orden ${orden} guardada en Firebase.`))
+      const updates = {};
+      updates[`bombas/bomba_${idBomba}/comando`] = orden;
+      
+      update(ref(database), updates)
+        .then(() => console.log(`✅ Orden ${orden} actualizada en Firebase.`))
         .catch((err) => alert("Error en Firebase: " + err.message));
     }
 
@@ -169,6 +172,7 @@
           break;
 
         case "SIN_COMUNICACION":
+        case "SIN_RESPUESTA":
           tarjeta.classList.add("estado-offline");
           banner.innerHTML = "⚠️ <b>POZO SIN COMUNICACIÓN</b>";
           banner.style.backgroundColor = "#ffc107";
