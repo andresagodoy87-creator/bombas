@@ -3,61 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AG Servicios Eléctricos - Control de Bombas</title>
-
+  <title>AG Servicios Eléctricos - Control de 15 Bombas</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #121826; color: #ffffff; padding: 20px; }
-    header { text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #2a3447; position: relative; }
-    header h1 { color: #00d2ff; font-size: 1.8rem; letter-spacing: 1px; }
-    header p { color: #8f9cae; font-size: 0.95rem; margin-top: 5px; }
+    body { background-color: #0f172a; color: #f8fafc; padding: 20px; }
+    header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #334155; padding-bottom: 15px; }
+    header h1 { font-size: 1.8rem; color: #38bdf8; }
+    header p { color: #94a3b8; font-size: 0.95rem; }
+    
+    /* Barra de estado del sistema */
+    .status-bar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #334155; }
+    .status-badge { font-weight: bold; padding: 5px 12px; border-radius: 4px; font-size: 0.85rem; text-transform: uppercase; }
+    .online { background-color: #166534; color: #4ade80; }
+    .offline { background-color: #991b1b; color: #fca5a5; }
 
-    /* Indicador del Estado del Maestro */
-    .status-maestro {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      background-color: #1a2332;
-      border: 1px solid #2a3447;
-      font-size: 0.85rem;
+    /* Alerta global cuando se bloquea el panel */
+    .banner-alerta {
+      display: none;
+      background-color: #7f1d1d;
+      color: #fecaca;
+      border: 1px solid #dc2626;
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
       font-weight: bold;
+      font-size: 0.95rem;
     }
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: #6c757d;
-      display: inline-block;
+
+    .grid-bombas { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 15px; }
+    .card { background: #1e293b; border-radius: 10px; padding: 15px; border: 1px solid #334155; display: flex; flex-direction: column; justify-content: space-between; transition: 0.3s; }
+    .card.sin-comunicacion { border-color: #f97316; background: #1c1917; }
+    
+    .card-title { font-size: 1.1rem; font-weight: bold; color: #f1f5f9; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .card-info { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.5; }
+    
+    .btn { border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; width: 100%; margin-top: 5px; }
+    .btn-on { background-color: #22c55e; color: #052e16; }
+    .btn-on:hover:not(:disabled) { background-color: #16a34a; }
+    .btn-off { background-color: #ef4444; color: #450a0a; }
+    .btn-off:hover:not(:disabled) { background-color: #dc2626; }
+    
+    /* Estado deshabilitado / bloqueado */
+    .btn:disabled {
+      background-color: #475569 !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
-    .dot-online { background-color: #28a745; box-shadow: 0 0 8px #28a745; }
-    .dot-offline { background-color: #dc3545; box-shadow: 0 0 8px #dc3545; }
-    .dot-warning { background-color: #ffc107; box-shadow: 0 0 8px #ffc107; }
 
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-    .card { background-color: #1a2332; border-radius: 12px; padding: 20px; border: 2px solid #2a3447; transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: space-between; }
-    .card h3 { font-size: 1.2rem; margin-bottom: 10px; color: #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .card .rssi { font-size: 0.75rem; color: #8f9cae; font-weight: normal; }
-
-    .banner-estado { padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.88rem; margin: 15px 0; transition: background-color 0.3s ease; }
-    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-
-    button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; transition: opacity 0.2s ease, transform 0.1s ease; }
-    button:active { transform: scale(0.98); }
-    .btn-prender { background-color: #28a745; color: #ffffff; }
-    .btn-apagar { background-color: #dc3545; color: #ffffff; }
-    button:hover { opacity: 0.85; }
-
-    .estado-encendida { border-color: #28a745 !important; box-shadow: 0 0 10px rgba(40, 167, 69, 0.2); }
-    .estado-apagada { border-color: #2a3447 !important; }
-    .estado-falla { border-color: #dc3545 !important; box-shadow: 0 0 12px rgba(220, 53, 69, 0.4); }
-    .estado-offline { border-color: #ffc107 !important; }
-
-    @keyframes parpadeoAlarma { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    .animar-falla { animation: parpadeoAlarma 1.2s infinite; }
+    .estado-tag { font-size: 0.75rem; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+    .st-ENCENDIDA { background: #15803d; color: #dcfce7; }
+    .st-APAGADA { background: #334155; color: #cbd5e1; }
+    .st-FALLA { background: #b91c1c; color: #fef2f2; }
+    .st-SIN_RESPUESTA { background: #c2410c; color: #ffedd5; }
   </style>
+</head>
+<body>
+
+  <header>
+    <h1>AG Servicios Eléctricos</h1>
+    <p>Sistema de Monitoreo y Control LoRa/Firebase (15 Bombas)</p>
+  </header>
+
+  <!-- Estado Maestro -->
+  <div class="status-bar">
+    <span>Estado Conexión Maestro ESP32:</span>
+    <span id="maestroStatus" class="status-badge offline">DESCONECTADO</span>
+  </div>
+
+  <!-- Cartel de advertencia global -->
+  <div id="bannerAlerta" class="banner-alerta">
+    ⚠️ MAESTRO SIN CONEXIÓN A INTERNET: Se ha deshabilitado el control para evitar inconsistencias.
+  </div>
+
+  <!-- Contenedor de Bombas -->
+  <div class="grid-bombas" id="contenedorBombas"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -68,143 +89,98 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    const db = getDatabase(app);
 
-    // Renderizar tarjetas de bombas
-    const grid = document.getElementById("grid-bombas");
-    for (let i = 1; i <= 15; i++) {
-      grid.innerHTML += `
-        <div class="card estado-apagada" id="tarjeta-${i}">
-          <h3>
-            Bomba ${i}
-            <span class="rssi" id="rssi-${i}">-- dBm</span>
-          </h3>
-          <div class="banner-estado" id="banner-${i}" style="background-color: #6c757d; color: #fff;">
-            ❄️ BOMBA DETENIDA
-          </div>
-          <div class="btn-group">
-            <button class="btn-prender" id="btn-prender-${i}">PRENDER</button>
-            <button class="btn-apagar" id="btn-apagar-${i}">APAGAR</button>
-          </div>
-        </div>
-      `;
-    }
+    const contenedor = document.getElementById('contenedorBombas');
+    const maestroStatus = document.getElementById('maestroStatus');
+    const bannerAlerta = document.getElementById('bannerAlerta');
 
-    // Eventos de botones para comandos
-    for (let i = 1; i <= 15; i++) {
-      document.getElementById(`btn-prender-${i}`).addEventListener('click', () => enviarComando(i, 'PRENDER'));
-      document.getElementById(`btn-apagar-${i}`).addEventListener('click', () => enviarComando(i, 'APAGAR'));
-    }
+    let maestroOnline = false;
 
-    function enviarComando(idBomba, orden) {
-      console.log(`Enviando ${orden} a Bomba ${idBomba}...`);
-      const updates = {};
-      updates[`bombas/bomba_${idBomba}/comando`] = orden;
+    // Monitor de estado del Maestro
+    onValue(ref(db, 'sistema/maestroOnline'), (snapshot) => {
+      maestroOnline = snapshot.val() === true;
       
-      update(ref(database), updates)
-        .then(() => console.log(`✅ Orden ${orden} actualizada en Firebase.`))
-        .catch((err) => alert("Error en Firebase: " + err.message));
-    }
+      if (maestroOnline) {
+        maestroStatus.textContent = "EN LÍNEA (ONLINE)";
+        maestroStatus.className = "status-badge online";
+        bannerAlerta.style.display = "none";
+      } else {
+        maestroStatus.textContent = "SIN CONEXIÓN (OFFLINE)";
+        maestroStatus.className = "status-badge offline";
+        bannerAlerta.style.display = "block";
+      }
+      
+      // Forzar renderizado para actualizar el estado de los botones (bloquear/desbloquear)
+      if (window.ultimoSnapshotBombas) {
+        renderizarBombas(window.ultimoSnapshotBombas);
+      }
+    });
 
-    // 1. ESCUCHAR ESTADO DE LAS BOMBAS EN TIEMPO REAL
-    const bombasRef = ref(database, 'bombas');
-    onValue(bombasRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
+    // Monitor de los nodos de las bombas
+    onValue(ref(db, 'bombas'), (snapshot) => {
+      window.ultimoSnapshotBombas = snapshot.val() || {};
+      renderizarBombas(window.ultimoSnapshotBombas);
+    });
+
+    function renderizarBombas(data) {
+      contenedor.innerHTML = '';
 
       for (let i = 1; i <= 15; i++) {
-        const bomba = data[`bomba_${i}`];
-        if (bomba) {
-          actualizarInterfazTarjeta(i, bomba.estado, bomba.rssi);
-        }
-      }
-    });
+        const key = `bomba_${i}`;
+        const b = data[key] || { comando: 'APAGAR', estado: 'APAGADA', rssi: 0 };
+        
+        const esSinRespuesta = (b.estado === 'SIN_RESPUESTA');
+        let claseEstado = 'st-APAGADA';
+        
+        if (b.estado === 'ENCENDIDA') claseEstado = 'st-ENCENDIDA';
+        else if (b.estado && b.estado.includes('FALLA')) claseEstado = 'st-FALLA';
+        else if (esSinRespuesta) claseEstado = 'st-SIN_RESPUESTA';
 
-    // 2. ESCUCHAR ESTADO DEL MAESTRO EN TIEMPO REAL (HEARTBEAT)
-    const sistemaRef = ref(database, 'sistema');
-    onValue(sistemaRef, (snapshot) => {
-      const datos = snapshot.val();
-      const dot = document.getElementById("dot-maestro");
-      const texto = document.getElementById("texto-maestro");
+        // Evaluar si esta bomba en específico se puede operar
+        const botonBloqueado = !maestroOnline || esSinRespuesta;
 
-      if (!datos || !datos.maestroOnline) {
-        dot.className = "status-dot dot-offline";
-        texto.innerText = "Maestro Offline";
-        return;
-      }
-
-      dot.className = "status-dot dot-online";
-      texto.innerText = "Maestro Online";
-    });
-
-    function actualizarInterfazTarjeta(id, estado, rssi) {
-      const tarjeta = document.getElementById(`tarjeta-${id}`);
-      const banner = document.getElementById(`banner-${id}`);
-      const rssiLabel = document.getElementById(`rssi-${id}`);
-
-      if (rssi) rssiLabel.innerText = `${rssi} dBm`;
-
-      tarjeta.classList.remove("estado-encendida", "estado-apagada", "estado-falla", "estado-offline");
-      banner.classList.remove("animar-falla");
-
-      switch (estado) {
-        case "ENCENDIDA":
-          tarjeta.classList.add("estado-encendida");
-          banner.innerHTML = "⚡ <b>BOMBA EN MARCHA</b>";
-          banner.style.backgroundColor = "#28a745";
-          banner.style.color = "#ffffff";
-          break;
-
-        case "FALLA_GUARDAMOTOR":
-          tarjeta.classList.add("estado-falla");
-          banner.classList.add("animar-falla");
-          banner.innerHTML = "🚨 <b>FALLA: SALTÓ GUARDAMOTOR</b>";
-          banner.style.backgroundColor = "#dc3545";
-          banner.style.color = "#ffffff";
-          break;
-
-        case "FALLA_CONTACTOR_TRABADO":
-          tarjeta.classList.add("estado-falla");
-          banner.classList.add("animar-falla");
-          banner.innerHTML = "🚨 <b>FALLA: CONTACTOR TRABADO</b>";
-          banner.style.backgroundColor = "#dc3545";
-          banner.style.color = "#ffffff";
-          break;
-
-        case "SIN_COMUNICACION":
-        case "SIN_RESPUESTA":
-          tarjeta.classList.add("estado-offline");
-          banner.innerHTML = "⚠️ <b>POZO SIN COMUNICACIÓN</b>";
-          banner.style.backgroundColor = "#ffc107";
-          banner.style.color = "#000000";
-          break;
-
-        case "APAGADA":
-        default:
-          tarjeta.classList.add("estado-apagada");
-          banner.innerHTML = "❄️ <b>BOMBA DETENIDA</b>";
-          banner.style.backgroundColor = "#6c757d";
-          banner.style.color = "#ffffff";
-          break;
+        const card = document.createElement('div');
+        card.className = `card ${esSinRespuesta ? 'sin-comunicacion' : ''}`;
+        
+        card.innerHTML = `
+          <div>
+            <div class="card-title">
+              <span>Bomba ${i}</span>
+              <span class="estado-tag ${claseEstado}">${b.estado || 'DESCONOCIDO'}</span>
+            </div>
+            <div class="card-info">
+              Comando actual: <strong>${b.comando || 'NINGUNO'}</strong><br>
+              Señal RSSI LoRa: <strong>${b.rssi ? b.rssi + ' dBm' : 'N/D'}</strong><br>
+              ${esSinRespuesta ? '<span style="color:#f97316; font-weight:bold;">⚠️ Sin comunicación LoRa</span>' : ''}
+            </div>
+          </div>
+          <div>
+            ${b.comando === 'PRENDER' 
+              ? `<button class="btn btn-off" ${botonBloqueado ? 'disabled' : ''} onclick="cambiarComando(${i}, 'APAGAR')">
+                  ${botonBloqueado ? 'BLOQUEADO' : 'APAGAR'}
+                 </button>`
+              : `<button class="btn btn-on" ${botonBloqueado ? 'disabled' : ''} onclick="cambiarComando(${i}, 'PRENDER')">
+                  ${botonBloqueado ? 'BLOQUEADO' : 'ENCENDER'}
+                 </button>`
+            }
+          </div>
+        `;
+        contenedor.appendChild(card);
       }
     }
+
+    // Función enviadora a Firebase (protegida)
+    window.cambiarComando = function(id, nuevoComando) {
+      if (!maestroOnline) {
+        alert("Acción denegada: El Maestro ESP32 está fuera de línea.");
+        return;
+      }
+      
+      const updates = {};
+      updates[`bombas/bomba_${id}/comando`] = nuevoComando;
+      update(ref(db), updates);
+    };
   </script>
-</head>
-<body>
-
-  <header>
-    <h1>AG SERVICIOS ELÉCTRICOS</h1>
-    <p>Sistema de Automatización y Monitoreo de Pozos vía LoRa</p>
-    
-    <!-- INDICADOR DE CONEXIÓN DEL MAESTRO -->
-    <div class="status-maestro">
-      <span class="status-dot" id="dot-maestro"></span>
-      <span id="texto-maestro">Verificando Maestro...</span>
-    </div>
-  </header>
-
-  <main class="grid-container" id="grid-bombas">
-  </main>
-
 </body>
 </html>
