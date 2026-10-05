@@ -3,115 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AG Servicios Eléctricos - Control de 15 Bombas</title>
+  <title>Control de Bombas - AG Servicios Eléctricos</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
-    body { background-color: #0b132b; color: #ffffff; padding: 15px; }
-    
-    header { 
-      text-align: center; 
-      padding: 15px; 
-      background: #1c2541; 
-      border-radius: 10px; 
-      margin-bottom: 15px;
-      border: 1px solid #3a506b;
-    }
-    header h1 { font-size: 1.6rem; color: #6fffe9; margin-bottom: 5px; }
-    header p { color: #a3cef1; font-size: 0.9rem; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #121824; color: #ffffff; padding: 16px; }
 
-    /* Barra del estado */
-    .status-bar { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      background: #1c2541; 
-      padding: 12px 20px; 
-      border-radius: 8px; 
-      margin-bottom: 15px;
-      border: 1px solid #3a506b;
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #232d3f;
     }
-    .status-badge { 
-      font-weight: bold; 
-      padding: 6px 12px; 
-      border-radius: 5px; 
-      font-size: 0.85rem; 
+    header h1 { font-size: 1.5rem; color: #38bdf8; }
+
+    /* Barra de estado */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1a2232;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #2b364a;
+      font-size: 0.9rem;
+    }
+    .status-badge {
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
       text-transform: uppercase;
     }
-    .online { background: #10b981; color: #042f2e; }
-    .offline { background: #ef4444; color: #450a0a; }
+    .online { background: #166534; color: #4ade80; }
+    .offline { background: #991b1b; color: #fca5a5; }
 
     /* Grilla de Bombas */
-    .grid-bombas { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-      gap: 15px; 
+    .grid-bombas {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
     }
 
-    /* Tarjeta individual */
-    .card { 
-      background: #1c2541; 
-      border-radius: 10px; 
-      padding: 15px; 
-      border: 2px solid #3a506b; 
-      display: flex; 
-      flex-direction: column; 
+    /* Tarjeta estilo exacto imagen */
+    .card {
+      background: #1c2333;
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid #2b364a;
+      display: flex;
+      flex-direction: column;
       justify-content: space-between;
     }
-    .card.encendida { border-color: #10b981; background: #0b2528; }
-    .card.falla { border-color: #ef4444; background: #2b1117; }
-    .card.sin-respuesta { border-color: #f97316; background: #29180e; }
 
-    .card-title { 
-      font-size: 1.1rem; 
-      font-weight: bold; 
-      display: flex; 
-      justify-content: space-between; 
+    .card-header {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .rssi-text {
+      font-size: 0.85rem;
+      color: #8b99b0;
     }
 
-    .card-info { 
-      font-size: 0.85rem; 
-      color: #cbd5e1; 
-      margin-bottom: 12px; 
-      line-height: 1.5;
-      background: #0b132b;
-      padding: 8px;
-      border-radius: 6px;
+    /* Caja Central con Icono de Bomba centrífuga */
+    .status-box {
+      background: #334155;
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 80px;
+      transition: background 0.3s;
     }
 
-    /* Botones */
-    .btn { 
-      border: none; 
-      padding: 12px; 
-      border-radius: 6px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      width: 100%; 
-      font-size: 0.9rem;
+    .status-box.activa {
+      background: #065f46;
+    }
+    .status-box.falla {
+      background: #991b1b;
+    }
+    .status-box.sin-respuesta {
+      background: #9a3412;
+    }
+
+    .bomba-icon {
+      width: 28px;
+      height: 28px;
+      fill: currentColor;
+      color: #ffffff;
+    }
+
+    .status-text {
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
       text-transform: uppercase;
+      line-height: 1.2;
     }
-    .btn-on { background: #10b981; color: #ffffff; }
-    .btn-off { background: #ef4444; color: #ffffff; }
-    .btn:disabled { background: #475569 !important; color: #94a3b8 !important; cursor: not-allowed; opacity: 0.6; }
 
-    /* Etiquetas */
-    .tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
-    .tag-ENCENDIDA { background: #047857; color: #ecfdf5; }
-    .tag-APAGADA { background: #334155; color: #f8fafc; }
-    .tag-FALLA { background: #b91c1c; color: #fef2f2; }
-    .tag-SIN_RESPUESTA { background: #c2410c; color: #fff7ed; }
+    /* Botones Lado a Lado */
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      border: none;
+      padding: 10px 4px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-on {
+      background-color: #22c55e;
+      color: #ffffff;
+    }
+    .btn-off {
+      background-color: #ef4444;
+      color: #ffffff;
+    }
+
+    .btn:disabled {
+      background-color: #475569 !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
 
   <header>
     <h1>AG SERVICIOS ELÉCTRICOS</h1>
-    <p>Control Centralizado de Bombas (LoRa / Firebase)</p>
   </header>
 
   <div class="status-bar">
-    <span>ESTADO DEL MAESTRO ESP32:</span>
+    <span>MAESTRO ESP32:</span>
     <span id="maestroStatus" class="status-badge offline">DESCONECTADO</span>
   </div>
 
@@ -135,7 +181,7 @@
     let estaOnline = false;
     let datosBombas = {};
 
-    // Detectar cuando Firebase recibe CUALQUIER dato de las bombas o sistema
+    // Escuchar cambios de Firebase
     onValue(ref(db), (snapshot) => {
       ultimoCambio = Date.now();
       if (snapshot.exists()) {
@@ -146,7 +192,6 @@
       render();
     });
 
-    // Monitoreo constante del tiempo
     setInterval(() => {
       revisarConexion();
     }, 1000);
@@ -155,7 +200,6 @@
       const tiempoSinDatos = Date.now() - ultimoCambio;
       const estadoPrevio = estaOnline;
 
-      // Si pasaron menos de 25 segundos desde la última actualización recibida, considera que el maestro está vivo
       estaOnline = (tiempoSinDatos < 25000);
 
       if (estaOnline) {
@@ -177,42 +221,48 @@
       for (let i = 1; i <= 15; i++) {
         const key = `bomba_${i}`;
         const b = datosBombas[key] || { comando: 'APAGAR', estado: 'APAGADA', rssi: 0 };
-        
-        let claseCard = '';
-        let claseTag = 'tag-APAGADA';
+
+        let claseBox = '';
+        let textoEstado = 'BOMBA DETENIDA';
         const sinRespuesta = (b.estado === 'SIN_RESPUESTA');
 
         if (b.estado === 'ENCENDIDA') {
-          claseCard = 'encendida';
-          claseTag = 'tag-ENCENDIDA';
+          claseBox = 'activa';
+          textoEstado = 'BOMBA ENCENDIDA';
         } else if (b.estado && b.estado.includes('FALLA')) {
-          claseCard = 'falla';
-          claseTag = 'tag-FALLA';
+          claseBox = 'falla';
+          textoEstado = b.estado.replace('_', ' ');
         } else if (sinRespuesta) {
-          claseCard = 'sin-respuesta';
-          claseTag = 'tag-SIN_RESPUESTA';
+          claseBox = 'sin-respuesta';
+          textoEstado = 'SIN RESPUESTA';
         }
 
         const bloq = !estaOnline || sinRespuesta;
 
         const card = document.createElement('div');
-        card.className = `card ${claseCard}`;
+        card.className = 'card';
         card.innerHTML = `
-          <div>
-            <div class="card-title">
-              <span>BOMBA ${i}</span>
-              <span class="tag ${claseTag}">${b.estado || 'DESCONOCIDO'}</span>
-            </div>
-            <div class="card-info">
-              Comando: <strong>${b.comando || 'NINGUNO'}</strong><br>
-              Señal RSSI: <strong>${b.rssi ? b.rssi + ' dBm' : 'N/D'}</strong>
-            </div>
+          <div class="card-header">
+            <span class="card-title">Bomba ${i}</span>
+            <span class="rssi-text">${b.rssi ? b.rssi + ' dBm' : '-50 dBm'}</span>
           </div>
-          <div>
-            ${b.comando === 'PRENDER' 
-              ? `<button class="btn btn-off" ${bloq ? 'disabled' : ''} onclick="enviar(${i}, 'APAGAR')">APAGAR</button>`
-              : `<button class="btn btn-on" ${bloq ? 'disabled' : ''} onclick="enviar(${i}, 'PRENDER')">ENCENDER</button>`
-            }
+
+          <div class="status-box ${claseBox}">
+            <!-- SVG Bomba Centrífuga -->
+            <svg class="bomba-icon" viewBox="0 0 100 120">
+              <path d="M 40 10 L 60 10 L 60 25 L 50 25 L 50 40 A 35 35 0 1 1 25 65 L 40 65 A 20 20 0 1 0 50 40 L 40 40 Z M 30 105 L 70 105 L 70 115 L 30 115 Z M 40 95 L 60 95 L 60 105 L 40 105 Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+              <circle cx="50" cy="65" r="12" fill="none" stroke="currentColor" stroke-width="6"/>
+              <line x1="50" y1="43" x2="50" y2="53" stroke="currentColor" stroke-width="5"/>
+              <line x1="50" y1="77" x2="50" y2="87" stroke="currentColor" stroke-width="5"/>
+              <line x1="28" y1="65" x2="38" y2="65" stroke="currentColor" stroke-width="5"/>
+              <line x1="62" y1="65" x2="72" y2="65" stroke="currentColor" stroke-width="5"/>
+            </svg>
+            <div class="status-text">${textoEstado}</div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-on" ${bloq ? 'disabled' : ''} onclick="enviar(${i}, 'PRENDER')">PRENDER</button>
+            <button class="btn btn-off" ${bloq ? 'disabled' : ''} onclick="enviar(${i}, 'APAGAR')">APAGAR</button>
           </div>
         `;
         contenedor.appendChild(card);
