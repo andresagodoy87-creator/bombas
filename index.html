@@ -171,6 +171,7 @@
 <body>
 
   <header>
+    <!-- Logo SVG integrado -->
     <svg class="header-logo" viewBox="0 0 200 200">
       <circle cx="100" cy="100" r="98" fill="#1d308f" stroke="#ffffff" stroke-width="2"/>
       <circle cx="100" cy="100" r="82" fill="#eab308"/>
@@ -205,7 +206,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, goOnline } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       databaseURL: "https://control-de-bombas-default-rtdb.firebaseio.com/"
@@ -217,47 +218,35 @@
     const contenedor = document.getElementById('contenedorBombas');
     const maestroStatus = document.getElementById('maestroStatus');
 
-    let ultimoCambio = Date.now();
+    let ultimaRespuestaTiempo = 0;
     let estaOnline = false;
     let datosBombas = {};
 
     render();
 
-    // Escuchar datos de la Realtime Database
+    // Listener global a la raíz de la base de datos
     onValue(ref(db), (snapshot) => {
-      ultimoCambio = Date.now();
+      ultimaRespuestaTiempo = Date.now();
       if (snapshot.exists()) {
         const root = snapshot.val();
         datosBombas = root.bombas || {};
       }
-      revisarConexion();
+      revisarEstadoMaestro();
       render();
     });
 
-    // Forzar reconexión inmediata al reabrir/desbloquear el iPhone
-    function reconectarMobile() {
-      goOnline(db);
-      ultimoCambio = Date.now();
-      revisarConexion();
-    }
-
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        reconectarMobile();
-      }
-    });
-
-    window.addEventListener('focus', reconectarMobile);
-
+    // Verificación estricta de tiempo (Reloj cada 1 segundo)
     setInterval(() => {
-      revisarConexion();
+      revisarEstadoMaestro();
     }, 1000);
 
-    function revisarConexion() {
-      const tiempoSinDatos = Date.now() - ultimoCambio;
-      const estadoPrevio = estaOnline;
+    function revisarEstadoMaestro() {
+      const tiempoTranscurrido = Date.now() - ultimaRespuestaTiempo;
+      const estadoAnterior = estaOnline;
 
-      estaOnline = (tiempoSinDatos < 25000);
+      // Como tu Maestro consulta/escribe Firebase constantemente, 
+      // si pasan más de 20s sin ninguna transmisión, significa que el Maestro se apago o perdió WiFi.
+      estaOnline = (ultimaRespuestaTiempo > 0) && (tiempoTranscurrido < 20000);
 
       if (estaOnline) {
         maestroStatus.textContent = "EN LÍNEA";
@@ -267,10 +256,18 @@
         maestroStatus.className = "status-badge offline";
       }
 
-      if (estadoPrevio !== estaOnline) {
+      if (estadoAnterior !== estaOnline) {
         render();
       }
     }
+
+    // Solución para reactivar la conexión instantáneamente en iPhone al volver a la app/pestaña
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        goOffline(db);
+        setTimeout(() => goOnline(db), 200);
+      }
+    });
 
     function render() {
       contenedor.innerHTML = '';
