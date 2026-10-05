@@ -224,7 +224,17 @@
 
     render();
 
-    // Listener global a la raíz de la base de datos
+    // 1. Escuchar la conexión nativa de Firebase (.info/connected)
+    onValue(ref(db, '.info/connected'), (snap) => {
+      if (snap.val() === true) {
+        ultimaRespuestaTiempo = Date.now();
+      } else {
+        ultimaRespuestaTiempo = 0;
+      }
+      revisarEstadoMaestro();
+    });
+
+    // 2. Escuchar la base de datos principal
     onValue(ref(db), (snapshot) => {
       ultimaRespuestaTiempo = Date.now();
       if (snapshot.exists()) {
@@ -235,7 +245,7 @@
       render();
     });
 
-    // Verificación estricta de tiempo (Reloj cada 1 segundo)
+    // 3. Revisar cada 1 segundo si el Maestro dejó de responder o si no hay red
     setInterval(() => {
       revisarEstadoMaestro();
     }, 1000);
@@ -244,9 +254,9 @@
       const tiempoTranscurrido = Date.now() - ultimaRespuestaTiempo;
       const estadoAnterior = estaOnline;
 
-      // Como tu Maestro consulta/escribe Firebase constantemente, 
-      // si pasan más de 20s sin ninguna transmisión, significa que el Maestro se apago o perdió WiFi.
-      estaOnline = (ultimaRespuestaTiempo > 0) && (tiempoTranscurrido < 20000);
+      // Si el navegador no tiene internet o pasaron más de 15 segundos sin transmisiones -> DESCONECTADO
+      const redNavegadorOk = navigator.onLine;
+      estaOnline = redNavegadorOk && (ultimaRespuestaTiempo > 0) && (tiempoTranscurrido < 15000);
 
       if (estaOnline) {
         maestroStatus.textContent = "EN LÍNEA";
@@ -261,7 +271,10 @@
       }
     }
 
-    // Solución para reactivar la conexión instantáneamente en iPhone al volver a la app/pestaña
+    // Eventos nativos de conexión/desconexión del navegador en PC y celular
+    window.addEventListener('online', () => { goOnline(db); revisarEstadoMaestro(); });
+    window.addEventListener('offline', () => { goOffline(db); revisarEstadoMaestro(); });
+
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         goOffline(db);
